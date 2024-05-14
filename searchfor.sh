@@ -21,21 +21,21 @@ fi
 HALF_CONTEXT=$((CONTEXT_LENGTH / 2))
 
 # Function to perform the search and limit output to the specified context
-function search_with_context() {
+search_with_context() {
     grep -rH "$SEARCH_TERM" "$DIRECTORY" 2>&1 | grep -v "Permission denied" | grep -v "Invalid argument" | awk -v term="$SEARCH_TERM" -v context="$HALF_CONTEXT" '{
         match($0, term);
         start=RSTART-context;
         if (start < 1) start=1;
         end=RSTART+RLENGTH+context-1;
         if (end > length($0)) end=length($0);
-        print FILENAME ":" substr($0, start, end-start+1);
+        print substr($0, 1, index($0, ":") + RLENGTH) substr($0, start, end-start+1);
     }'
 }
 
-# Run the search function with optional nohup redirection
+# Check if an output file is specified and run the search function accordingly
 if [ -z "$OUTPUT_FILE" ]; then
     search_with_context
 else
-    nohup bash -c "$(declare -f search_with_context); search_with_context" > "$OUTPUT_FILE" 2>&1 &
+    (search_with_context > "$OUTPUT_FILE" 2>&1 &)
     echo "Search is running in the background. Output will be saved to $OUTPUT_FILE."
 fi
