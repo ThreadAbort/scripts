@@ -1,14 +1,15 @@
 #!/bin/bash
 
 # Check if the correct number of arguments is provided
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <directory> <search_term> <context_length>"
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+    echo "Usage: $0 <directory> <search_term> <context_length> [output_file]"
     exit 1
 fi
 
 DIRECTORY=$1
 SEARCH_TERM=$2
 CONTEXT_LENGTH=$3
+OUTPUT_FILE=$4
 
 # Ensure context length is a valid number
 if ! [[ "$CONTEXT_LENGTH" =~ ^[0-9]+$ ]]; then
@@ -27,9 +28,14 @@ function search_with_context() {
         if (start < 1) start=1;
         end=RSTART+RLENGTH+context-1;
         if (end > length($0)) end=length($0);
-        print substr($0, 1, index($0, ":")) substr($0, start, end-start+1);
+        print FILENAME ":" substr($0, start, end-start+1);
     }'
 }
 
-# Run the search function
-search_with_context
+# Run the search function with optional nohup redirection
+if [ -z "$OUTPUT_FILE" ]; then
+    search_with_context
+else
+    nohup bash -c "$(declare -f search_with_context); search_with_context" > "$OUTPUT_FILE" 2>&1 &
+    echo "Search is running in the background. Output will be saved to $OUTPUT_FILE."
+fi
